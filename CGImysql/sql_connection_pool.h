@@ -24,6 +24,7 @@ public:
 	//单例模式
 	static connection_pool *GetInstance();
 
+    /* 初始化数据库相关的信息 */
 	void init(string url, string User, string PassWord, string DataBaseName, int Port, int MaxConn, int close_log); 
 
 private:
@@ -33,8 +34,10 @@ private:
 	int m_MaxConn;  //最大连接数
 	int m_CurConn;  //当前已使用的连接数
 	int m_FreeConn; //当前空闲的连接数
+    /* 在获取和放回数据库连接时需要加锁 */
 	locker lock;
 	list<MYSQL *> connList; //连接池
+    /* 信号量 */
 	sem reserve;
 
 public:
@@ -46,6 +49,7 @@ public:
 	int m_close_log;	//日志开关
 };
 
+/* Q: 了解RAII 机制 */
 class connectionRAII{
 
 public:

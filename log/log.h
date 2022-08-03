@@ -10,16 +10,19 @@
 
 using namespace std;
 
+/* 下面的Log 采用了设计模式中的单例 */
+/* Q: 为什么要用单例模式，见设计模式P96 */
 class Log
 {
 public:
-    //C++11以后,使用局部变量懒汉不用加锁
+    //C++11以后能够保证使用静态变量的安全性,使用局部变量懒汉不用加锁
     static Log *get_instance()
     {
         static Log instance;
         return &instance;
     }
 
+    /* 执行异步日志 */
     static void *flush_log_thread(void *args)
     {
         Log::get_instance()->async_write_log();
@@ -27,17 +30,21 @@ public:
     //可选择的参数有日志文件、日志缓冲区大小、最大行数以及最长日志条队列
     bool init(const char *file_name, int close_log, int log_buf_size = 8192, int split_lines = 5000000, int max_queue_size = 0);
 
+    /* log 写入函数 */
     void write_log(int level, const char *format, ...);
 
+    /* 内部调用fflush函数，进行强制刷新 */
     void flush(void);
 
 private:
     Log();
     virtual ~Log();
+    /* 异步写入函数 */
     void *async_write_log()
     {
         string single_log;
         //从阻塞队列中取出一个日志string，写入文件
+        //消费者，消费一条消息
         while (m_log_queue->pop(single_log))
         {
             m_mutex.lock();
@@ -54,9 +61,11 @@ private:
     long long m_count;  //日志行数记录
     int m_today;        //因为按天分类,记录当前时间是那一天
     FILE *m_fp;         //打开log的文件指针
+    /* 暂时存储要写入的日志文件 */
     char *m_buf;
     block_queue<string> *m_log_queue; //阻塞队列
     bool m_is_async;                  //是否同步标志位
+    /* 对log文件指针的操作需要加锁 */
     locker m_mutex;
     int m_close_log; //关闭日志
 };
